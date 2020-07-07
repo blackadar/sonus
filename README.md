@@ -1,2 +1,2 @@
 # sonus
-Machine Learning voice audio noise filtering.
+Machine Learning voice identification using scikit-learn
