@@ -74,9 +74,11 @@ def load_vox(data: pd.DataFrame, in_place: bool = False):
         sys.stdout.write(f"\r[-] Reading: {i} of {len(mod)} ({i / len(mod) * 100: .2f}%)")
         sys.stdout.flush()
         with audioread.audio_open(row['file']) as f:
+            data = bytearray()
             for buf in f:
-                clips.append(bytearray(buf))
+                data = data + buf
+            clips.append(data)
     sys.stdout.write(f"\r[ ] Read {len(mod)} files into DataFrame.\r\n")
     sys.stdout.flush()
-    mod['audio'] = clips
+    mod['audio'] = pd.Series(clips)
     return mod
