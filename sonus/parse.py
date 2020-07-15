@@ -7,6 +7,8 @@ import pathlib
 import zipfile
 import audioread
 import pandas as pd
+import wave
+from scipy.io.wavfile import read
 
 
 def unzip(file: pathlib.Path, directory: pathlib.Path, quiet_ignore: bool = False):
@@ -82,3 +84,22 @@ def load_vox(data: pd.DataFrame, in_place: bool = False):
     sys.stdout.flush()
     mod['audio'] = pd.Series(clips)
     return mod
+
+
+def convert_pcm_to_wav(data):
+    new_data = []
+
+    for i in range(len(data)):
+        sys.stdout.write(f"\r[-] Reading: {i} of {len(data)} ({i / len(data) * 100: .2f}%)")
+        sys.stdout.flush()
+
+        with wave.open('out.wav', 'wb') as wavfile:
+            wavfile.setparams((1, 2, 16000, 0, 'NONE', 'NONE'))
+            wavfile.writeframes(data.loc[i, 'audio'])
+
+        a = read("out.wav")
+        new_data.append(a[1])
+
+    data['audio'] = new_data
+
+    return data
