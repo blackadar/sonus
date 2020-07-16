@@ -88,8 +88,8 @@ def window_data(datax, datay, window_length, hop_size, sample_rate, test_size):
     """Returns a windowed dataset in the format X_train, X_test, y_train, y_test
 
     Args:
-        datax (pd.DataFrame): unwindowed data
-        datay (pd.DataFrame): data y values that corespond to datax by row
+        datax (pd.Series): unwindowed data in format from pickle['audio']
+        datay (pd.DataFrame): data y values that corespond to datax by row pickle['id']
         window_length (float): window length in seconds
         hop_size (float): size to move window by on each iteration
         sample_rate (int): number of samples per second in the data
