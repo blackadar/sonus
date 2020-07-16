@@ -9,6 +9,7 @@ import audioread
 import pandas as pd
 import wave
 from scipy.io.wavfile import read
+import numpy as np
 
 
 def unzip(file: pathlib.Path, directory: pathlib.Path, quiet_ignore: bool = False):
@@ -103,3 +104,49 @@ def convert_pcm_to_wav(data):
     data['audio'] = new_data
 
     return data
+
+def window_data(datax, datay, window_length, hop_size, sample_rate, test_size):
+    """Returns a windowed dataset in the format X_train, X_test, y_train, y_test
+
+    Args:
+        datax (pd.Series): unwindowed data in format from pickle['audio']
+        datay (pd.DataFrame): data y values that corespond to datax by row pickle['id']
+        window_length (float): window length in seconds
+        hop_size (float): size to move window by on each iteration
+        sample_rate (int): number of samples per second in the data
+
+    Returns:
+        np.ndarray: X_train
+        np.ndarray: X_test
+        np.ndarray: y_train
+        np.ndarray: y_test
+    """
+    sample_window_length = int(np.floor(window_length * sample_rate))
+    sample_hop_size = int(np.floor(hop_size * sample_rate))
+
+    X_train = np.empty((0, sample_window_length))
+    X_test = np.empty((0, sample_window_length))
+    y_train = np.array([])
+    y_test = np.array([])
+
+    for (index, row) in datax.items():
+        sys.stdout.write(f"\r[-] Reading: {index} of {len(datax)} ({index / len(datax) * 100: .2f}%)")
+        sys.stdout.flush()
+
+        windowed_row = np.empty((0, sample_window_length))
+        target_row = np.array([])
+
+        for start_pos in np.arange(0, len(row)-sample_window_length, sample_hop_size):
+            window = datax.loc[index][start_pos:start_pos + sample_window_length]
+
+            windowed_row = np.vstack((windowed_row, window))
+            target_row = np.append(target_row, datay[index])
+
+        midpoint = int(np.floor(len(windowed_row) * (1-test_size)))
+
+        X_train = np.vstack((X_train, windowed_row[:midpoint]))
+        X_test = np.vstack((X_test, windowed_row[midpoint:]))
+        y_train = np.append(y_train, target_row[:midpoint])
+        y_test = np.append(y_test, target_row[midpoint:])
+
+    return X_train, X_test, y_train, y_test
