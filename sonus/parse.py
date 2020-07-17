@@ -73,10 +73,16 @@ def load_vox(data: pd.DataFrame, in_place: bool = False):
     else:
         mod = data
     clips = []
+    channels = []
+    samplerates = []
+    durations = []
     for i, row in mod.iterrows():
         sys.stdout.write(f"\r[-] Reading: {i} of {len(mod)} ({i / len(mod) * 100: .2f}%)")
         sys.stdout.flush()
         with audioread.audio_open(row['file']) as f:
+            channels.append(f.channels)
+            samplerates.append(f.samplerate)
+            durations.append(f.duration)
             data = bytearray()
             for buf in f:
                 data = data + buf
@@ -84,6 +90,9 @@ def load_vox(data: pd.DataFrame, in_place: bool = False):
     sys.stdout.write(f"\r[ ] Read {len(mod)} files into DataFrame.\r\n")
     sys.stdout.flush()
     mod['audio'] = pd.Series(clips)
+    mod['channels'] = pd.Series(channels)
+    mod['samplerate'] = pd.Series(samplerates)
+    mod['duration'] = pd.Series(durations)
     return mod
 
 
@@ -99,11 +108,12 @@ def convert_pcm_to_wav(data):
             wavfile.writeframes(data.loc[i, 'audio'])
 
         a = read("out.wav")
-        new_data.append(a[1])
+        new_data.append(np.array(a[1]))
 
     data['audio'] = new_data
 
     return data
+
 
 def window_data(datax, datay, window_length, hop_size, sample_rate, test_size):
     """Returns a windowed dataset in the format X_train, X_test, y_train, y_test
