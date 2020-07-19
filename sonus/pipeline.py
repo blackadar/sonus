@@ -9,7 +9,54 @@ import sklearn
 import scipy
 
 
-def fft(data: pd.DataFrame):
+def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
+    """
+    Adds a frequency space feature to the data. The data should be a windowed audio array.
+    The output of this algorithm is appended columns at the end.
+    https://makersportal.com/blog/2018/9/13/audio-processing-in-python-part-i-sampling-and-the-fast-fourier-transform
+    https://www.youtube.com/watch?v=17cOaqrwXlo
+    https://www.youtube.com/watch?v=aQKX3mrDFoY  << Especially helpful
+    https://github.com/markjay4k/Audio-Spectrum-Analyzer-in-Python
+    :param return_x: Return the FFT x-axis.
+    :param high_pass: Where to stop reporting, at the higher end of the FFT
+    :param low_pass: Where to start reporting the low end of the FFT
+    :param data: np.ndarray Windowed audio data for training
+    :return: np.ndarray with appended columns, extra length of high_pass-low_pass. (or tuple x_axis, np.ndarray)
+    """
+
+    assert high_pass > low_pass, f"Invalid FFT window {low_pass} to {high_pass}"
+
+    n_samples = data.shape[1]
+    fft_ys = []
+
+    fft_x = scipy.fft.fftfreq(n_samples, (1.0 / 16000))  # 16000 is the sample rate
+    fft_x = fft_x[0:(n_samples // 2)]  # Take the first half of the x-axis too
+    pass_mask = [True if low_pass <= x <= high_pass else False for x in fft_x]
+    fft_x = fft_x[pass_mask]
+
+    for i, row in enumerate(data):
+        sys.stdout.write(f"\r[-] FFT: {i} of {len(data)} ({i / len(data) * 100: .2f}%)")
+        sys.stdout.flush()
+        n_samples = len(row)
+        fft_y = scipy.fft(row)
+        fft_y = np.abs(fft_y[0:(n_samples // 2)])  # Take real components of first half
+        # fft_y = np.multiply(fft_y, 2) / (32767 * (n_samples // 2))  # Rescale, 16-bit PCM
+        fft_y = np.divide(np.multiply(fft_y, 2), n_samples)
+        fft_y = fft_y[pass_mask]  # Mask out unwanted values
+        fft_ys.append(fft_y)
+    sys.stdout.write(f"\r[-] FFT: Completed {len(data)} (100%)")
+    sys.stdout.flush()
+
+    fft_ys = np.array(fft_ys)
+    result = np.concatenate((data, fft_ys), axis=1)
+
+    if not return_x:
+        return result
+    else:
+        return fft_x, result
+
+
+def fft_df(data: pd.DataFrame):
     """
     Adds a frequency space feature to the data. The audio column should be in wav format, np.ndarrays.
     https://makersportal.com/blog/2018/9/13/audio-processing-in-python-part-i-sampling-and-the-fast-fourier-transform
