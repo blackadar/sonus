@@ -7,6 +7,13 @@ import pandas as pd
 import numpy as np
 import sklearn
 import scipy
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import VarianceThreshold
+
+
+def generate_pipeline(model):
+    return Pipeline([("Scaler", StandardScaler()), ("Zero Var Remover", VarianceThreshold()), ("Model", model)])
 
 
 def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
@@ -48,47 +55,32 @@ def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
     sys.stdout.flush()
 
     fft_ys = np.array(fft_ys)
-    result = np.concatenate((data, fft_ys), axis=1)
+    # result = np.concatenate((data, fft_ys), axis=1)
 
     if not return_x:
-        return result
+        return fft_ys
     else:
-        return fft_x, result
+        return fft_x, fft_ys
 
 
-def fft_df(data: pd.DataFrame):
+def column_join(*data):
     """
-    Adds a frequency space feature to the data. The audio column should be in wav format, np.ndarrays.
-    https://makersportal.com/blog/2018/9/13/audio-processing-in-python-part-i-sampling-and-the-fast-fourier-transform
-    https://www.youtube.com/watch?v=17cOaqrwXlo
-    https://www.youtube.com/watch?v=aQKX3mrDFoY  << Especially helpful
-    https://github.com/markjay4k/Audio-Spectrum-Analyzer-in-Python
-    :param data: pd.DataFrame input DataFrame with ['audio'] column to transform
-    :return: pd.DataFrame with new columns ['fft_x'], ['fft_y']
+    Takes any number of np.ndarray to concatenate on the column dimension.
+    This can combine data from multiple sources to be used with an ML model.
+    :param data: np.ndarrays with equal numbers of rows.
+    :return: One single np.ndarray, concatenated on columns.
     """
+    assert len(data) > 1, f"Need at least 2 arrays to join. Got {len(data)}."
+    assert type(data[0]) is np.ndarray
+    expected_rows = data[0].shape[0]
 
-    assert 'audio' in data.keys(), "'audio' must be present in keys."
-    assert len(data) > 0, "data does not contain any rows."
-    assert type(data.iloc[0]['audio']) is np.ndarray, "'audio' must contain numpy arrays."
+    result = data[0]
 
-    fft_xs = []
-    fft_ys = []
+    for item in data[1:]:
+        assert type(item) is np.ndarray
+        assert item.shape[0] == expected_rows, f"Rows must be equal length. Expected {expected_rows}, " \
+                                               f"got {item.shape[0]}."
 
-    for i, row in data.iterrows():
-        sys.stdout.write(f"\r[-] FFT: {i} of {len(data)} ({i / len(data) * 100: .2f}%)")
-        sys.stdout.flush()
-        n_samples = len(row['audio'])
-        fft_y = scipy.fft(row['audio'])
-        fft_x = scipy.fft.fftfreq(len(fft_y), (1.0 / row['samplerate']))
-        fft_y = np.abs(fft_y[0:(n_samples // 2)])  # Take real components of first half
-        # fft_y = np.multiply(fft_y, 2) / (32767 * (n_samples // 2))  # Rescale, 16-bit PCM
-        fft_y = np.divide(np.multiply(fft_y, 2), n_samples)
-        fft_x = fft_x[0:(n_samples // 2)]  # Take the first half of the x-axis too
-        fft_xs.append(fft_x)
-        fft_ys.append(fft_y)
-    sys.stdout.write(f"\r[-] FFT: Completed {len(data)} ({i / len(data) * 100: .2f}%)")
-    sys.stdout.flush()
-    data['fft_y'] = pd.Series(fft_ys)
-    data['fft_x'] = pd.Series(fft_xs)
+        result = np.concatenate((result, item), axis=1)
 
-    return data
+    return result
