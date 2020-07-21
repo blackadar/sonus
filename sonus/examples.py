@@ -5,6 +5,22 @@ Demonstrates functions, and helps visualize intermediates.
 import matplotlib.pyplot as plt
 
 
+def plot_waveform(data, idx):
+    """
+    Plots the audio waveform of wav-style data
+    :param data: np.ndarray processed by sonus.parse.window_data
+    :param idx: Index to plot
+    :return: None, plot displayed
+    """
+    import numpy as np
+    fig, ax = plt.subplots()
+    plt.plot(np.arange(0, data.shape[1]), data[idx])
+    plt.ylabel('Amplitude')
+    plt.xlabel('Sample Index')
+    plt.title(f'Sample {idx} Waveform')
+    fig.show()
+
+
 def plot_fft(data, fft_x, idx, fft_start=8000, fft_end=11990):
     """
     Show the frequency plot of a row.
