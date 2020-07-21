@@ -7,6 +7,31 @@ import pandas as pd
 import numpy as np
 import sklearn
 import scipy
+import statistics as stat
+import math
+
+
+def add_stat_features(data: np.ndarray):
+    """
+    based on the data given, creates features such as min, max, mean, std, rms, percentiles; 0, 25, 50, and 75
+    :param data: the data used to create statistics/features from
+    :return: concatenation of input data and the new features
+    """
+    NUM_STATS = 9
+
+    result = np.zeros(shape=(len(data), NUM_STATS))
+
+    for i in range(len(data)):
+        result[i][0] = data[i].max()
+        result[i][1] = data[i].min()
+        result[i][2] = data[i].mean()
+        result[i][3] = stat.stdev(data[i])
+        result[i][4] = math.sqrt(sum(data[i] ** 2) / len(data[i]))
+        result[i][5] = np.percentile(data[i], 0)
+        result[i][6] = np.percentile(data[i], 25)
+        result[i][7] = np.percentile(data[i], 50)
+        result[i][8] = np.percentile(data[i], 75)
+    return result
 
 
 def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
