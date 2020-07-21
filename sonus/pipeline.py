@@ -31,7 +31,7 @@ def add_stat_features(data: np.ndarray):
         result[i][6] = np.percentile(data[i], 25)
         result[i][7] = np.percentile(data[i], 50)
         result[i][8] = np.percentile(data[i], 75)
-    return np.concatenate((data, result), 1)
+    return result
 
 
 def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
