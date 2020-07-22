@@ -28,16 +28,16 @@ def add_stat_features(data: np.ndarray):
 
     result = np.zeros(shape=(len(data), NUM_STATS))
 
-    for i in range(len(data)):
-        result[i][0] = data[i].max()
-        result[i][1] = data[i].min()
-        result[i][2] = data[i].mean()
-        result[i][3] = stat.stdev(data[i])
-        result[i][4] = math.sqrt(sum(data[i] ** 2) / len(data[i]))
-        result[i][5] = np.percentile(data[i], 0)
-        result[i][6] = np.percentile(data[i], 25)
-        result[i][7] = np.percentile(data[i], 50)
-        result[i][8] = np.percentile(data[i], 75)
+    result[:, 0] = data.max(axis=1)
+    result[:, 1] = data.min(axis=1)
+    result[:, 2] = data.mean(axis=1)
+    result[:, 3] = np.std(data, axis=1)
+    result[:, 4] = np.sqrt(np.sum((data ** 2) / data.shape[1], axis=1))
+    result[:, 5] = np.percentile(data, 0, axis=1)
+    result[:, 6] = np.percentile(data, 25, axis=1)
+    result[:, 7] = np.percentile(data, 50, axis=1)
+    result[:, 8] = np.percentile(data, 75, axis=1)
+
     return result
 
 
