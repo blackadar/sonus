@@ -109,3 +109,12 @@ def column_join(*data):
         result = np.concatenate((result, item), axis=1)
 
     return result
+
+
+def diff(data: np.ndarray):
+    """
+    calculates the derivative of the data
+    :param data: the data to take the derivative of
+    :return: the derivative
+    """
+    return np.diff(data)
