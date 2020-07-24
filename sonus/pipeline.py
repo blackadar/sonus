@@ -15,14 +15,15 @@ from sklearn.feature_selection import VarianceThreshold
 
 
 def generate_pipeline(model):
-    return Pipeline([("Scaler", StandardScaler()), ("Zero Var Remover", VarianceThreshold()), ("Model", model)])
+    return Pipeline(
+            [("Scaler", StandardScaler()), ("Zero Var Remover", VarianceThreshold(threshold=0.8)), ("Model", model)])
 
 
-def add_stat_features(data: np.ndarray):
+def statistics(data: np.ndarray):
     """
     based on the data given, creates features such as min, max, mean, std, rms, percentiles; 0, 25, 50, and 75
-    :param data: the data used to create statistics/features from
-    :return: concatenation of input data and the new features
+    :param data: np.ndarray the data used to create statistics/features from
+    :return: np.ndarray new features as columns
     """
     NUM_STATS = 9
 
@@ -37,6 +38,35 @@ def add_stat_features(data: np.ndarray):
     result[:, 6] = np.percentile(data, 25, axis=1)
     result[:, 7] = np.percentile(data, 50, axis=1)
     result[:, 8] = np.percentile(data, 75, axis=1)
+
+    return result
+
+
+def arg_statistics(data: np.ndarray):
+    """
+    Perform similar analysis to pipeline.statistics, but return the indexes instead of the values.
+    :param data: np.ndarray the data used to create statistics/features from
+    :return: np.ndarray new features as columns
+    """
+
+    NUM_STATS = 7
+
+    result = np.zeros(shape=(len(data), NUM_STATS))
+
+    result[:, 0] = data.argmax(axis=1)
+    result[:, 1] = data.argmin(axis=1)
+
+    # Unfortunately vectorized arg functions end here...
+    for idx, row in enumerate(data):
+        sys.stdout.write(f"\r[-] Arg-Stat: {idx} of {len(data)} ({idx / len(data) * 100: .2f}%)")
+        sys.stdout.flush()
+        result[idx, 2] = np.argsort(row)[len(row) // 2]  # nlogn each row, n * nlogn total
+        result[idx, 3] = np.argwhere(row == (np.percentile(row, 0, interpolation='nearest')))[0]
+        result[idx, 4] = np.argwhere(row == (np.percentile(row, 25, interpolation='nearest')))[0]
+        result[idx, 5] = np.argwhere(row == (np.percentile(row, 50, interpolation='nearest')))[0]
+        result[idx, 6] = np.argwhere(row == (np.percentile(row, 75, interpolation='nearest')))[0]
+    sys.stdout.write(f"\r[-] Arg-Stat: Completed {len(data)} (100%)\n")
+    sys.stdout.flush()
 
     return result
 
@@ -76,7 +106,7 @@ def fft(data: np.ndarray, low_pass=20, high_pass=20000, return_x=False):
         fft_y = np.divide(np.multiply(fft_y, 2), n_samples)
         fft_y = fft_y[pass_mask]  # Mask out unwanted values
         fft_ys.append(fft_y)
-    sys.stdout.write(f"\r[-] FFT: Completed {len(data)} (100%)")
+    sys.stdout.write(f"\r[-] FFT: Completed {len(data)} (100%)\n")
     sys.stdout.flush()
 
     fft_ys = np.array(fft_ys)
